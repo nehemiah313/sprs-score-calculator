@@ -4,6 +4,53 @@ const LS_KEY = 'sprs-calc-v1';
 
 const $ = (id) => document.getElementById(id);
 
+/* ---------------- Lead capture ----------------
+ * Set REPORT_INBOX to the inbox that receives emailed results. When set, a
+ * "Get your score reviewed" form appears: the visitor enters their work email
+ * and their results are posted to FormSubmit, which emails the full summary
+ * plus lead details to REPORT_INBOX. Leave "" to hide the form.
+ *
+ * One-time setup: the first submission triggers a FormSubmit activation
+ * email to REPORT_INBOX. The inbox owner must click the activation link
+ * once; after that, submissions arrive automatically.
+ */
+const REPORT_INBOX = 'n.harvard@aitechpros.ai';
+const LEAD_STORE_KEY = 'sprs-lead-v1';
+
+function leadEndpoint(inbox) {
+  return 'https://formsubmit.co/ajax/' + encodeURIComponent(inbox);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/* Builds the JSON body posted to the lead endpoint. Pure: safe to unit test. */
+function buildLeadPayload(company, visitorEmail, score, openCount, neverDeferrableOpen, report) {
+  return {
+    _subject: 'SPRS score review request' + (company ? ' - ' + company : ''),
+    _template: 'table',
+    name: company || '(no company given)',
+    email: visitorEmail,
+    estimated_sprs_score: String(score),
+    open_gaps: String(openCount),
+    never_deferrable_open: String(neverDeferrableOpen),
+    message: report
+  };
+}
+
+function loadLead() {
+  try {
+    const raw = window.localStorage.getItem(LEAD_STORE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function saveLead(lead) {
+  try { window.localStorage.setItem(LEAD_STORE_KEY, JSON.stringify(lead)); }
+  catch (e) { /* storage unavailable; lead capture still works */ }
+}
+
 function deduction(c, s) {
   if (s === 'yes' || s === 'na' || !s) return 0;
   if (c.weight === 'NA') return 0; // 3.12.4: no point value, but no SSP means no assessment
@@ -207,17 +254,21 @@ function exportCsv() {
   download('sprs-gaps.csv', rows.map(r => r.join(',')).join('\n'), 'text/csv');
 }
 
+function buildSummaryMd(score, open, stateMap, dateStr) {
+  let md = '# SPRS self-assessment summary\n\nEstimated SPRS score: **' + score + '**\n\n';
+  md += 'Scored ' + dateStr + ' with the free SPRS Score Calculator (Neo Harvard, AI Tech Pros).\n\n';
+  md += '## Open gaps in MAPS priority order\n\n';
+  open.forEach((c, i) => {
+    md += (i + 1) + '. **' + c.id + '** (-' + deduction(c, stateMap[c.id]) + ')' + (c.never_deferrable ? ' NEVER DEFERRABLE' : '') + ': ' + c.requirement + '\n';
+  });
+  return md;
+}
+
 function exportMd() {
   const score = $('scoreNum').textContent;
   const open = CONTROLS.filter(c => state[c.id] === 'no' || state[c.id] === 'partial')
     .sort((a, b) => mapsRank(a) - mapsRank(b));
-  let md = '# SPRS self-assessment summary\n\nEstimated SPRS score: **' + score + '**\n\n';
-  md += 'Scored ' + new Date().toISOString().slice(0, 10) + ' with the free SPRS Score Calculator (Neo Harvard, AI Tech Pros).\n\n';
-  md += '## Open gaps in MAPS priority order\n\n';
-  open.forEach((c, i) => {
-    md += (i + 1) + '. **' + c.id + '** (-' + deduction(c, state[c.id]) + ')' + (c.never_deferrable ? ' NEVER DEFERRABLE' : '') + ': ' + c.requirement + '\n';
-  });
-  download('sprs-summary.md', md, 'text/markdown');
+  download('sprs-summary.md', buildSummaryMd(score, open, state, new Date().toISOString().slice(0, 10)), 'text/markdown');
 }
 
 function download(name, text, type) {
@@ -254,5 +305,51 @@ async function init() {
       buildUI(); render(); applyFilters();
     }
   });
+
+  const leadCapture = $('leadCapture');
+  if (!REPORT_INBOX) {
+    leadCapture.hidden = true;
+  } else {
+    const savedLead = loadLead();
+    if (savedLead) {
+      if (savedLead.email) $('leadEmail').value = savedLead.email;
+      if (savedLead.company) $('leadCompany').value = savedLead.company;
+    }
+    $('leadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailEl = $('leadEmail');
+      const companyEl = $('leadCompany');
+      const statusEl = $('leadStatus');
+      const submitBtn = $('leadSubmit');
+      const visitorEmail = emailEl.value.trim();
+      const company = companyEl.value.trim();
+      if (!isValidEmail(visitorEmail)) {
+        statusEl.textContent = 'Enter a valid work email address.';
+        emailEl.focus();
+        return;
+      }
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Sending your results...';
+      const score = $('scoreNum').textContent;
+      const open = CONTROLS.filter(c => state[c.id] === 'no' || state[c.id] === 'partial')
+        .sort((a, b) => mapsRank(a) - mapsRank(b));
+      const neverDeferrableOpen = open.filter(c => c.never_deferrable).length;
+      const md = buildSummaryMd(score, open, state, new Date().toISOString().slice(0, 10));
+      try {
+        const res = await fetch(leadEndpoint(REPORT_INBOX), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(buildLeadPayload(company, visitorEmail, score, open.length, neverDeferrableOpen, md))
+        });
+        if (!res.ok) throw new Error('lead post failed: ' + res.status);
+        saveLead({ email: visitorEmail, company: company });
+        statusEl.textContent = 'Sent. Watch your inbox: we will reply with your score and next steps.';
+      } catch (err) {
+        statusEl.textContent = 'Could not send right now. Export your summary above and try again later.';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  }
 }
 init();
