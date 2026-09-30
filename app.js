@@ -4,39 +4,50 @@ const LS_KEY = 'sprs-calc-v1';
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------------- Lead capture ----------------
- * Set REPORT_INBOX to the inbox that receives emailed results. When set, a
- * "Get your score reviewed" form appears: the visitor enters their work email
- * and their results are posted to FormSubmit, which emails the full summary
- * plus lead details to REPORT_INBOX. Leave "" to hide the form.
- *
- * One-time setup: the first submission triggers a FormSubmit activation
- * email to REPORT_INBOX. The inbox owner must click the activation link
- * once; after that, submissions arrive automatically.
+/* ---------------- Lead capture (no backend) ----------------
+ * Set REPORT_INBOX to the inbox that receives review requests. When set, a
+ * "Get your score reviewed" form appears: the visitor enters their work
+ * email, their full MAPS-prioritized summary downloads immediately, and
+ * their mail app opens with a pre-addressed review request carrying a
+ * results summary. They hit Send; the lead arrives from their own address.
+ * Leave "" to hide the form.
  */
 const REPORT_INBOX = 'n.harvard@aitechpros.ai';
 const LEAD_STORE_KEY = 'sprs-lead-v1';
 
-function leadEndpoint(inbox) {
-  return 'https://formsubmit.co/ajax/' + encodeURIComponent(inbox);
+function buildLeadSubject(company) {
+  return 'SPRS score review request' + (company ? ' - ' + company : '');
+}
+
+/* Compact summary for the review-request email body. Pure: safe to unit test. */
+function buildLeadBody(visitorEmail, company, score, open) {
+  const neverOpen = open.filter(c => c.never_deferrable);
+  const lines = [
+    'SPRS score review request',
+    '',
+    'Visitor email: ' + visitorEmail,
+    'Company: ' + (company || '(not given)'),
+    'Estimated SPRS score: ' + score,
+    'Open gaps: ' + open.length + ' (never-deferrable open: ' + neverOpen.length + ')',
+    ''
+  ];
+  const top = open.slice(0, 8);
+  if (top.length) {
+    lines.push('Top MAPS-prioritized gaps:');
+    top.forEach(c => lines.push('- ' + c.id + (c.never_deferrable ? ' (never-deferrable)' : '')));
+    lines.push('');
+  }
+  lines.push('The visitor downloaded their full MAPS-prioritized summary from the SPRS Score Calculator.');
+  return lines.join('\n');
+}
+
+function leadMailto(inbox, subject, body) {
+  return 'mailto:' + inbox + '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
 }
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-/* Builds the JSON body posted to the lead endpoint. Pure: safe to unit test. */
-function buildLeadPayload(company, visitorEmail, score, openCount, neverDeferrableOpen, report) {
-  return {
-    _subject: 'SPRS score review request' + (company ? ' - ' + company : ''),
-    _template: 'table',
-    name: company || '(no company given)',
-    email: visitorEmail,
-    estimated_sprs_score: String(score),
-    open_gaps: String(openCount),
-    never_deferrable_open: String(neverDeferrableOpen),
-    message: report
-  };
 }
 
 function loadLead() {
@@ -315,12 +326,11 @@ async function init() {
       if (savedLead.email) $('leadEmail').value = savedLead.email;
       if (savedLead.company) $('leadCompany').value = savedLead.company;
     }
-    $('leadForm').addEventListener('submit', async (e) => {
+    $('leadForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const emailEl = $('leadEmail');
       const companyEl = $('leadCompany');
       const statusEl = $('leadStatus');
-      const submitBtn = $('leadSubmit');
       const visitorEmail = emailEl.value.trim();
       const company = companyEl.value.trim();
       if (!isValidEmail(visitorEmail)) {
@@ -328,27 +338,14 @@ async function init() {
         emailEl.focus();
         return;
       }
-      submitBtn.disabled = true;
-      statusEl.textContent = 'Sending your results...';
       const score = $('scoreNum').textContent;
       const open = CONTROLS.filter(c => state[c.id] === 'no' || state[c.id] === 'partial')
         .sort((a, b) => mapsRank(a) - mapsRank(b));
-      const neverDeferrableOpen = open.filter(c => c.never_deferrable).length;
-      const md = buildSummaryMd(score, open, state, new Date().toISOString().slice(0, 10));
-      try {
-        const res = await fetch(leadEndpoint(REPORT_INBOX), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(buildLeadPayload(company, visitorEmail, score, open.length, neverDeferrableOpen, md))
-        });
-        if (!res.ok) throw new Error('lead post failed: ' + res.status);
-        saveLead({ email: visitorEmail, company: company });
-        statusEl.textContent = 'Sent. Watch your inbox: we will reply with your score and next steps.';
-      } catch (err) {
-        statusEl.textContent = 'Could not send right now. Export your summary above and try again later.';
-      } finally {
-        submitBtn.disabled = false;
-      }
+      download('sprs-summary.md', buildSummaryMd(score, open, state, new Date().toISOString().slice(0, 10)), 'text/markdown');
+      saveLead({ email: visitorEmail, company: company });
+      window.location.href = leadMailto(REPORT_INBOX, buildLeadSubject(company),
+        buildLeadBody(visitorEmail, company, score, open));
+      statusEl.textContent = 'Summary downloaded. An email draft just opened: hit Send and we will reply with a read on your biggest gaps. If no draft opened, email your downloaded summary to ' + REPORT_INBOX + '.';
     });
   }
 }
