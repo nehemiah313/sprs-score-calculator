@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPRS Score Calculator | NIST SP 800-171</title>
+<meta name="description" content="Estimate your SPRS score against all 110 NIST SP 800-171 requirements. Free tool by Neo Harvard, AI Tech Pros.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div>
+      <h1>SPRS Score Calculator</h1>
+      <p class="sub">All 110 NIST SP 800-171 Rev. 2 requirements, weighted the way DoD scores them. Built by <strong>Neo Harvard</strong>, AI Tech Pros.</p>
+    </div>
+    <a class="gh" href="https://github.com/nehemiah313/sprs-score-calculator" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<section class="dashboard wrap" id="dashboard">
+  <div class="score-card">
+    <div class="score-num" id="scoreNum">110</div>
+    <div class="score-label" id="scoreBand">Perfect score</div>
+    <div class="gate" id="gateStatus"></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="stat-num" id="statDone">0</span><span class="stat-lbl">Implemented</span></div>
+    <div class="stat"><span class="stat-num" id="statOpen">0</span><span class="stat-lbl">Open gaps</span></div>
+    <div class="stat"><span class="stat-num" id="statNA">0</span><span class="stat-lbl">Not applicable</span></div>
+    <div class="stat"><span class="stat-num" id="statLost5">0</span><span class="stat-lbl">Points lost (5-pt)</span></div>
+    <div class="stat"><span class="stat-num" id="statLost3">0</span><span class="stat-lbl">Points lost (3-pt)</span></div>
+    <div class="stat"><span class="stat-num" id="statLost1">0</span><span class="stat-lbl">Points lost (1-pt)</span></div>
+  </div>
+  <div class="actions">
+    <button id="exportCsv">Export gap list (CSV)</button>
+    <button id="exportMd">Export summary (Markdown)</button>
+    <button id="resetAll" class="danger">Reset</button>
+  </div>
+  <p class="how">Mark each requirement <strong>Yes</strong> (implemented), <strong>No</strong> (not implemented), or <strong>N/A</strong> (documented justification). Your score starts at 110 and drops by the weight of every open requirement. Two controls, 3.5.3 and 3.13.11, offer a <strong>Partial</strong> option. Your answers stay in this browser only. Nothing is uploaded.</p>
+</section>
+
+<section class="wrap toolbar">
+  <input type="search" id="search" placeholder="Search requirements, e.g. MFA, encryption, audit...">
+  <select id="familyFilter"><option value="">All families</option></select>
+  <select id="statusFilter">
+    <option value="">All statuses</option>
+    <option value="unanswered">Unanswered</option>
+    <option value="yes">Implemented</option>
+    <option value="no">Open gaps</option>
+    <option value="na">Not applicable</option>
+  </select>
+</section>
+
+<main class="wrap" id="families"></main>
+
+<section class="wrap gaps" id="gapSection" hidden>
+  <h2>Your MAPS-prioritized gap list</h2>
+  <p>Close them in this order: the never-deferrable six first, then 5-point controls, then 3-point, then 1-point. This is the Prioritize step of MAPS (Map, Assess, Prioritize, Sustain).</p>
+  <ol id="gapList"></ol>
+</section>
+
+<footer class="wrap foot">
+  <p>Scoring follows the DoD NIST SP 800-171 Assessment Methodology v1.2.1: start at 110, subtract 5/3/1 per open requirement, floor of -203. A POA&amp;M does not change your score. Requirement text is from NIST SP 800-171 Rev. 2, which is public domain. This tool estimates; it is not legal advice and does not replace an assessment.</p>
+  <p>Data: <a href="data/nist-800-171-controls.json">nist-800-171-controls.json</a> and <a href="data/nist-800-171-controls.csv">nist-800-171-controls.csv</a>, free to reuse under MIT.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
