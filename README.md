@@ -17,8 +17,8 @@ A free, interactive tool for estimating your **SPRS score** (Supplier Performanc
 
 The calculator runs on a machine-readable dataset of all 110 requirements:
 
-- [`data/nist-800-171-controls.json`](data/nist-800-171-controls.json) — full dataset with requirement text, weights, family names, never-deferrable flags, and special scoring rules
-- [`data/nist-800-171-controls.csv`](data/nist-800-171-controls.csv) — the same data as CSV
+- [`data/nist-800-171-controls.json`](data/nist-800-171-controls.json): full dataset with requirement text, weights, family names, never-deferrable flags, and special scoring rules
+- [`data/nist-800-171-controls.csv`](data/nist-800-171-controls.csv): the same data as CSV
 
 Requirement text is quoted from NIST SP 800-171 Rev. 2 (public domain). Weights follow the DoD NIST SP 800-171 Assessment Methodology v1.2.1:
 
@@ -40,7 +40,7 @@ This tool estimates. It is not legal advice and does not replace a real assessme
 
 ## Built by
 
-**Neo Harvard**, CEO of [AI Tech Pros](https://aitechpros.ai) — SPRS and CMMC readiness for defense contractors. Part of the [MAPS framework](https://github.com/nehemiah313/maps-framework) family: Map, Assess, Prioritize, Sustain.
+**Neo Harvard**, CEO of [AI Tech Pros](https://aitechpros.ai). SPRS and CMMC readiness for defense contractors. Part of the [MAPS framework](https://github.com/nehemiah313/maps-framework) family: Map, Assess, Prioritize, Sustain.
 
 ## Lead capture
 
@@ -50,8 +50,6 @@ At the top of `app.js`:
 const REPORT_INBOX = "n.harvard@aitechpros.ai";
 ```
 
-When set, a "Get your score reviewed" form appears under the gap list. The visitor enters their work email (and optional company); their results are posted to FormSubmit (`https://formsubmit.co/ajax/<inbox>`), which emails the full summary plus lead details (company, email, estimated score, open-gap count, never-deferrable-open count) to the inbox. The visitor's email and company are remembered in localStorage (`sprs-lead-v1`) so returning visitors do not retype them. Set the constant to `""` to hide the form entirely.
-
-One-time setup: the first submission triggers a FormSubmit activation email to the inbox. Click the activation link once; submissions arrive automatically after that.
+When set, a "Get your score reviewed" form appears under the gap list. The visitor enters their work email (and optional company); their full MAPS-prioritized summary downloads immediately, and their mail app opens with a pre-addressed review request to the inbox carrying a results summary (company, email, estimated score, open-gap count, never-deferrable-open count, top gaps). The visitor hits Send in their own mail app, so the lead arrives from their real address with no backend service involved. The visitor's email and company are remembered in localStorage (`sprs-lead-v1`) so returning visitors do not retype them. Set the constant to `""` to hide the form entirely.
 
 Privacy copy on the page states results are sent to AI Tech Pros for follow-up and the address is never sold.
