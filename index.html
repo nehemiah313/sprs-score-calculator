@@ -37,7 +37,7 @@
     <button id="exportMd">Export summary (Markdown)</button>
     <button id="resetAll" class="danger">Reset</button>
   </div>
-  <p class="how">Mark each requirement <strong>Yes</strong> (implemented), <strong>No</strong> (not implemented), or <strong>N/A</strong> (documented justification). Your score starts at 110 and drops by the weight of every open requirement. Two controls, 3.5.3 and 3.13.11, offer a <strong>Partial</strong> option. Your answers stay in this browser only. Nothing is uploaded.</p>
+  <p class="how">Mark each requirement <strong>Yes</strong> (implemented), <strong>No</strong> (not implemented), or <strong>N/A</strong> (documented justification). Your score starts at 110 and drops by the weight of every open requirement. Two controls, 3.5.3 and 3.13.11, offer a <strong>Partial</strong> option. Your answers stay in this browser. Nothing is uploaded unless you choose to send your results for review below.</p>
 </section>
 
 <section class="wrap toolbar">
@@ -58,6 +58,19 @@
   <h2>Your MAPS-prioritized gap list</h2>
   <p>Close them in this order: the never-deferrable six first, then 5-point controls, then 3-point, then 1-point. This is the Prioritize step of MAPS (Map, Assess, Prioritize, Sustain).</p>
   <ol id="gapList"></ol>
+</section>
+
+<section class="wrap lead" id="leadCapture">
+  <h2>Get your score reviewed</h2>
+  <p class="muted">Enter your work email and send your results to AI Tech Pros. We will reply with your score, a read on your biggest gaps, and what a fixed-price Sprint would cover. No spam, ever. We never sell your information.</p>
+  <form id="leadForm" class="lead-form" novalidate>
+    <label class="sr-only" for="leadEmail">Work email</label>
+    <input type="email" id="leadEmail" name="email" placeholder="you@company.com" required autocomplete="email">
+    <label class="sr-only" for="leadCompany">Company</label>
+    <input type="text" id="leadCompany" name="company" placeholder="Company (optional)" autocomplete="organization">
+    <button type="submit" id="leadSubmit">Send my results</button>
+  </form>
+  <p class="lead-status" id="leadStatus" role="status" aria-live="polite"></p>
 </section>
 
 <footer class="wrap foot">
