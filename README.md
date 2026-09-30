@@ -41,3 +41,17 @@ This tool estimates. It is not legal advice and does not replace a real assessme
 ## Built by
 
 **Neo Harvard**, CEO of [AI Tech Pros](https://aitechpros.ai) — SPRS and CMMC readiness for defense contractors. Part of the [MAPS framework](https://github.com/nehemiah313/maps-framework) family: Map, Assess, Prioritize, Sustain.
+
+## Lead capture
+
+At the top of `app.js`:
+
+```js
+const REPORT_INBOX = "n.harvard@aitechpros.ai";
+```
+
+When set, a "Get your score reviewed" form appears under the gap list. The visitor enters their work email (and optional company); their results are posted to FormSubmit (`https://formsubmit.co/ajax/<inbox>`), which emails the full summary plus lead details (company, email, estimated score, open-gap count, never-deferrable-open count) to the inbox. The visitor's email and company are remembered in localStorage (`sprs-lead-v1`) so returning visitors do not retype them. Set the constant to `""` to hide the form entirely.
+
+One-time setup: the first submission triggers a FormSubmit activation email to the inbox. Click the activation link once; submissions arrive automatically after that.
+
+Privacy copy on the page states results are sent to AI Tech Pros for follow-up and the address is never sold.
