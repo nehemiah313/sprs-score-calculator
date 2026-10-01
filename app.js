@@ -374,5 +374,42 @@ async function init() {
       statusEl.textContent = 'Summary downloaded. Check your inbox: your results summary and next steps are on the way.';
     });
   }
+
+  /* Prioritizer: POST answers to the server-side engine, open the private plan. */
+  const PRIORITIZE_URL = 'https://leads.aitechpros.ai/prioritize';
+  const PLAN_PAGE = 'https://aitechpros.ai/sprs-prioritizer/?t=';
+  $('prioritizeBtn').addEventListener('click', async () => {
+    const statusEl = $('prioritizeStatus');
+    const btn = $('prioritizeBtn');
+    const saved = loadLead() || {};
+    const email = (($('leadEmail') && $('leadEmail').value.trim()) || saved.email || '').trim();
+    const company = (($('leadCompany') && $('leadCompany').value.trim()) || saved.company || '').trim();
+    if (!isValidEmail(email)) {
+      statusEl.textContent = 'Enter your work email in the form above first, then click this button.';
+      if ($('leadEmail')) $('leadEmail').focus();
+      return;
+    }
+    btn.disabled = true;
+    statusEl.textContent = 'Building your phased fix plan...';
+    try {
+      const res = await fetch(PRIORITIZE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, company: company, answers: state, hp: '' })
+      });
+      const data = await res.json();
+      if (data && data.ok && data.token) {
+        saveLead({ email: email, company: company });
+        statusEl.textContent = 'Plan ready. Opening it now...';
+        location.href = PLAN_PAGE + data.token;
+      } else {
+        statusEl.textContent = 'Could not build the plan (' + ((data && data.error) || 'unknown error') + '). Try again.';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      statusEl.textContent = 'Could not reach the server. Check your connection and try again.';
+      btn.disabled = false;
+    }
+  });
 }
 init();
