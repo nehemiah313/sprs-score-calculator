@@ -4,16 +4,34 @@ const LS_KEY = 'sprs-calc-v1';
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------------- Lead capture (no backend) ----------------
+/* ---------------- Lead capture (silent backend) ----------------
  * Set REPORT_INBOX to the inbox that receives review requests. When set, a
  * "Get your score reviewed" form appears: the visitor enters their work
  * email, their full MAPS-prioritized summary downloads immediately, and
- * their mail app opens with a pre-addressed review request carrying a
- * results summary. They hit Send; the lead arrives from their own address.
+ * their email, score summary, and top gaps are silently POSTed to
+ * LEAD_CAPTURE_URL (a backend failure never blocks the download).
  * Leave "" to hide the form.
  */
 const REPORT_INBOX = 'n.harvard@aitechpros.ai';
 const LEAD_STORE_KEY = 'sprs-lead-v1';
+const LEAD_CAPTURE_URL = 'https://leads.aitechpros.ai/capture';
+
+/* Silent lead capture: POSTs the visitor's email, score summary, and top
+ * gaps to the lead-capture endpoint. Fire-and-forget: a backend failure
+ * must never block the visitor's summary download. */
+function captureLead(payload) {
+  try {
+    fetch(LEAD_CAPTURE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({
+        page_url: (typeof location !== 'undefined' && location.href) || '',
+        hp: ''
+      }, payload)),
+      keepalive: true
+    }).catch(function () { /* never block the download */ });
+  } catch (e) { /* never block the download */ }
+}
 
 function buildLeadSubject(company) {
   return 'SPRS score review request' + (company ? ' - ' + company : '');
@@ -343,9 +361,17 @@ async function init() {
         .sort((a, b) => mapsRank(a) - mapsRank(b));
       download('sprs-summary.md', buildSummaryMd(score, open, state, new Date().toISOString().slice(0, 10)), 'text/markdown');
       saveLead({ email: visitorEmail, company: company });
-      window.location.href = leadMailto(REPORT_INBOX, buildLeadSubject(company),
-        buildLeadBody(visitorEmail, company, score, open));
-      statusEl.textContent = 'Summary downloaded. An email draft just opened: hit Send and we will reply with a read on your biggest gaps. If no draft opened, email your downloaded summary to ' + REPORT_INBOX + '.';
+      const neverOpen = open.filter(c => c.never_deferrable).length;
+      captureLead({
+        email: visitorEmail,
+        tool: 'sprs-score-calculator',
+        score: 'Estimated SPRS score ' + score + ' (' + open.length + ' open gaps, ' + neverOpen + ' never-deferrable)',
+        summary: {
+          company: company,
+          topGaps: open.slice(0, 8).map(c => c.id + (c.never_deferrable ? ' (never-deferrable)' : ''))
+        }
+      });
+      statusEl.textContent = 'Summary downloaded. Check your inbox: your results summary and next steps are on the way.';
     });
   }
 }
