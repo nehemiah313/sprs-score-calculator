@@ -41,7 +41,7 @@
 </section>
 
 <section class="wrap toolbar">
-  <input type="search" id="search" placeholder="Search requirements, e.g. MFA, encryption, audit...">
+  <input type="search" id="search" placeholder="Search requirements, e.g. MFA, encryption, audit..." aria-label="Search controls">
   <select id="familyFilter"><option value="">All families</option></select>
   <select id="statusFilter">
     <option value="">All statuses</option>
@@ -70,12 +70,15 @@
     <input type="text" id="leadCompany" name="company" placeholder="Company (optional)" autocomplete="organization">
     <button type="submit" id="leadSubmit">Download my summary</button>
   </form>
+  <p class="muted privacy-line">By submitting, you agree to receive your results and occasional follow-ups by email. Unsubscribe anytime. See our <a href="https://aitechpros.ai/privacy/">Privacy Policy</a>.</p>
   <p class="lead-status" id="leadStatus" role="status" aria-live="polite"></p>
 </section>
 
 <footer class="wrap foot">
   <p>Scoring follows the DoD NIST SP 800-171 Assessment Methodology v1.2.1: start at 110, subtract 5/3/1 per open requirement, floor of -203. A POA&amp;M does not change your score. Requirement text is from NIST SP 800-171 Rev. 2, which is public domain. This tool estimates; it is not legal advice and does not replace an assessment.</p>
   <p>Data: <a href="data/nist-800-171-controls.json">nist-800-171-controls.json</a> and <a href="data/nist-800-171-controls.csv">nist-800-171-controls.csv</a>, free to reuse under MIT.</p>
+  <p class="legal-line">&copy; 2026 AI Tech Pros, Inc. All rights reserved. &middot; <a href="mailto:n.harvard@aitechpros.ai">n.harvard@aitechpros.ai</a> &middot; <a href="https://aitechpros.ai/privacy/">Privacy Policy</a> &middot; <a href="https://aitechpros.ai/terms/">Terms of Use</a></p>
+    <p class="storage-note">Your assessment answers are stored only in this browser (local storage). If you enter your email above, only your email, score summary, and top gaps are sent to our team.</p>
 </footer>
 
 <script src="app.js"></script>
